@@ -11,7 +11,6 @@ dependencies:
   pscore: '>=0.1.0 <0.2.0'
 
 dev_dependencies:
-  analyzer: ^14.1.0
   checks: ^0.3.1
   lints: ^6.1.0
   release: ^0.1.11
