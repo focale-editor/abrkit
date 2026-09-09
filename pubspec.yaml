@@ -1,6 +1,6 @@
 name: abrkit
 description: A pure Dart reader for legacy and modern Adobe Photoshop ABR brush libraries.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/focale-editor/abrkit
 repository: https://github.com/focale-editor/abrkit
 
