@@ -52,6 +52,22 @@ await File('brushes-copy.abr').writeAsBytes(output, flush: true);
 
 `AbrSample.alpha` contains one normalized 8-bit mask value per pixel in row-major order. For 16-bit sources, `AbrSample.alpha16` also retains every full-precision sample. Bounds retain the original Photoshop-space origin.
 
+## Reusable `dart:convert` API
+
+`AbrCodec` implements `Codec<AbrFile, List<int>>` and keeps decoding and encoding policies together in one immutable value:
+
+```dart
+const AbrCodec codec = AbrCodec(
+  decodeOptions: AbrDecodeOptions(mode: AbrDecodeMode.strict),
+  encodeOptions: AbrEncodeOptions(mode: AbrEncodeMode.strict),
+);
+
+final AbrFile library = codec.decode(bytes);
+final Uint8List output = codec.encode(library);
+```
+
+The `List<int>` binary type allows composition with standard codecs such as `base64`; direct `encode` calls still return `Uint8List`. `AbrEncoder` and `AbrDecoder` are also configurable `Converter` implementations. Every conversion consumes or produces one complete in-memory ABR file rather than an incremental byte stream.
+
 ## Decoding and encoding policies
 
 Tolerant decoding is the default. Recoverable extensions are preserved and reported through `AbrFile.warnings`:

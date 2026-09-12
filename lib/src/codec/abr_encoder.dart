@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:abrkit/src/model/abr_brush.dart';
@@ -7,7 +8,21 @@ import 'package:abrkit/src/model/abr_sample.dart';
 import 'package:pscore/pscore.dart';
 
 /// Encodes immutable ABR models into legacy or modern Photoshop brush libraries.
-abstract final class AbrEncoder {
+///
+/// The configured instance is a one-shot [Converter] for complete in-memory
+/// files. Use [encode] when conversion options are supplied per call.
+final class AbrEncoder extends Converter<AbrFile, List<int>> {
+  /// Options applied by [convert].
+  final AbrEncodeOptions options;
+
+  /// Creates a reusable encoder with fixed [options].
+  const AbrEncoder({
+    this.options = const AbrEncodeOptions(),
+  });
+
+  @override
+  Uint8List convert(AbrFile input) => encode(input, options: options);
+
   /// Canonical modern section signature.
   static const String _sectionSignature = '8BIM';
 

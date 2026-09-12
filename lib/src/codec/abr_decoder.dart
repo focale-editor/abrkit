@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:abrkit/src/codec/abr_bitmap_decoder.dart';
@@ -11,7 +12,24 @@ import 'package:abrkit/src/model/abr_sample.dart';
 import 'package:pscore/pscore.dart';
 
 /// Decodes legacy and modern Adobe Photoshop ABR brush libraries.
-abstract final class AbrDecoder {
+///
+/// The configured instance is a one-shot [Converter] for complete in-memory
+/// files. Use [decode] when conversion options are supplied per call.
+final class AbrDecoder extends Converter<List<int>, AbrFile> {
+  /// Options applied by [convert].
+  final AbrDecodeOptions options;
+
+  /// Creates a reusable decoder with fixed [options].
+  const AbrDecoder({
+    this.options = const AbrDecodeOptions(),
+  });
+
+  @override
+  AbrFile convert(List<int> input) => decode(
+    input is Uint8List ? input : Uint8List.fromList(input),
+    options: options,
+  );
+
   /// Decodes one complete in-memory ABR [bytes] buffer.
   static AbrFile decode(
     Uint8List bytes, {

@@ -3,6 +3,7 @@ library;
 
 export 'package:pscore/pscore.dart';
 
+export 'src/codec/abr_codec.dart';
 export 'src/codec/abr_decoder.dart';
 export 'src/codec/abr_encoder.dart';
 export 'src/model/abr_brush.dart';
