@@ -53,7 +53,10 @@ abstract final class AbrDecoder {
         throw PsFormatException(message: 'Unsupported ABR version $version', source: bytes, offset: 0);
     }
     if (!reader.isAtEnd) {
-      context.warning('${reader.remaining} trailing bytes remain after the ABR payload', reader.baseOffset + reader.offset);
+      final int offset = reader.baseOffset + reader.offset;
+      final Uint8List trailingData = reader.readBytes(reader.remaining);
+      context.setTrailing(trailingData);
+      context.warning('${trailingData.length} trailing bytes remain after the ABR payload', offset);
     }
     context.validateReferences();
     return context.build();
@@ -219,8 +222,9 @@ abstract final class AbrDecoder {
     while (!reader.isAtEnd) {
       final int sectionOffset = reader.baseOffset + reader.offset;
       if (reader.remaining < 12) {
+        final Uint8List trailingData = reader.readBytes(reader.remaining);
+        context.setTrailing(trailingData);
         context.warning('Truncated modern ABR section header', sectionOffset);
-        reader.skip(reader.remaining);
         break;
       }
       final String signature = reader.readString(4);
@@ -234,7 +238,7 @@ abstract final class AbrDecoder {
         throw PsFormatException(message: 'ABR section $key length $length exceeds the ${reader.remaining} remaining bytes', source: reader.bytes, offset: sectionOffset + 8);
       }
       final PsBinaryReader section = reader.readReader(length);
-      _skipOptionalFinalPadding(
+      final Uint8List paddingData = _readOptionalFinalPadding(
         reader: reader,
         padding: paddedLength - length,
         context: context,
@@ -246,7 +250,9 @@ abstract final class AbrDecoder {
         signature: signature,
         key: key,
         offset: sectionOffset,
+        declaredLength: length,
         data: section.bytes,
+        paddingData: paddingData,
       );
       if (signature != '8BIM') {
         context.warning('Unexpected modern ABR section signature "$signature"', sectionOffset, sectionKey: key);
@@ -308,7 +314,7 @@ abstract final class AbrDecoder {
         break;
       }
       final PsBinaryReader sample = section.readReader(length);
-      _skipOptionalFinalPadding(
+      _readOptionalFinalPadding(
         reader: section,
         padding: paddedLength - length,
         context: context,
@@ -453,7 +459,7 @@ abstract final class AbrDecoder {
   static int _retainedSampleBytes(AbrBounds bounds, int depth) => bounds.pixelCount * (depth == 16 ? 3 : 1);
 
   /// Skips alignment bytes while accepting an unpadded final payload.
-  static void _skipOptionalFinalPadding({
+  static Uint8List _readOptionalFinalPadding({
     required PsBinaryReader reader,
     required int padding,
     required _AbrDecodeContext context,
@@ -462,14 +468,13 @@ abstract final class AbrDecoder {
     required String sectionKey,
   }) {
     if (padding <= reader.remaining) {
-      reader.skip(padding);
-      return;
+      return reader.readBytes(padding);
     }
     if (reader.isAtEnd) {
-      return;
+      return Uint8List(0);
     }
     context.warning('Truncated four-byte padding after $label', offset, sectionKey: sectionKey);
-    reader.skip(reader.remaining);
+    return reader.readBytes(reader.remaining);
   }
 
   /// Rounds [value] up to the next four-byte boundary.
@@ -513,6 +518,12 @@ final class _AbrDecodeContext {
 
   /// Recoverable issues emitted during tolerant decoding.
   final List<AbrWarning> warnings = <AbrWarning>[];
+
+  /// Bytes following the recognized payload.
+  Uint8List trailingData = Uint8List(0);
+
+  /// Number of trailing bytes encountered in the source.
+  int trailingByteCount = 0;
 
   /// Aggregate decoded bitmap allocation accounted so far.
   int _decodedPixelBytes = 0;
@@ -580,16 +591,26 @@ final class _AbrDecodeContext {
     required String signature,
     required String key,
     required int offset,
+    required int declaredLength,
     required Uint8List data,
+    required Uint8List paddingData,
   }) {
     sections.add(
       AbrTaggedSection(
         signature: signature,
         key: key,
         offset: offset,
+        declaredLength: declaredLength,
         data: options.preserveSectionData ? data : Uint8List(0),
+        paddingData: paddingData,
       ),
     );
+  }
+
+  /// Retains trailing source bytes according to the decode options.
+  void setTrailing(Uint8List data) {
+    trailingByteCount = data.length;
+    trailingData = options.preserveTrailingData ? Uint8List.fromList(data) : Uint8List(0);
   }
 
   /// Emits a recoverable warning or converts it to an error in strict mode.
@@ -628,6 +649,8 @@ final class _AbrDecodeContext {
     descriptors: descriptors,
     hierarchyDescriptors: hierarchyDescriptors,
     sections: sections,
+    trailingData: trailingData,
+    trailingByteCount: trailingByteCount,
     warnings: warnings,
   );
 

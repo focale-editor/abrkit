@@ -26,8 +26,14 @@ final class AbrTaggedSection {
   /// Absolute offset of the section signature.
   final int offset;
 
-  /// Unpadded section payload.
+  /// Payload length declared in the section header.
+  final int declaredLength;
+
+  /// Unpadded section payload, or an empty list when preservation was disabled.
   final Uint8List data;
+
+  /// Alignment bytes following the payload.
+  final Uint8List paddingData;
 
   /// Creates an immutable tagged section.
   AbrTaggedSection({
@@ -35,7 +41,11 @@ final class AbrTaggedSection {
     required this.key,
     required this.offset,
     required Uint8List data,
-  }) : data = Uint8List.fromList(data).asUnmodifiableView();
+    int? declaredLength,
+    Uint8List? paddingData,
+  }) : declaredLength = declaredLength ?? data.length,
+       data = Uint8List.fromList(data).asUnmodifiableView(),
+       paddingData = Uint8List.fromList(paddingData ?? Uint8List(0)).asUnmodifiableView();
 }
 
 /// One brush-group slot from a modern `phry` hierarchy descriptor.
@@ -93,6 +103,12 @@ final class AbrFile {
   /// Every modern tagged section, including unknown keys.
   final List<AbrTaggedSection> sections;
 
+  /// Bytes following the recognized ABR payload.
+  final Uint8List trailingData;
+
+  /// Number of trailing bytes, even when source preservation was disabled.
+  final int trailingByteCount;
+
   /// Recoverable compatibility issues encountered while decoding.
   final List<AbrWarning> warnings;
 
@@ -112,6 +128,8 @@ final class AbrFile {
     required List<PsDescriptor> hierarchyDescriptors,
     required List<AbrTaggedSection> sections,
     required List<AbrWarning> warnings,
+    Uint8List? trailingData,
+    int? trailingByteCount,
   }) : brushes = List<AbrBrush>.unmodifiable(brushes),
        samples = List<AbrSample>.unmodifiable(samples),
        patterns = List<AbrPattern>.unmodifiable(patterns),
@@ -119,6 +137,8 @@ final class AbrFile {
        descriptors = List<PsDescriptor>.unmodifiable(descriptors),
        hierarchyDescriptors = List<PsDescriptor>.unmodifiable(hierarchyDescriptors),
        sections = List<AbrTaggedSection>.unmodifiable(sections),
+       trailingData = Uint8List.fromList(trailingData ?? Uint8List(0)).asUnmodifiableView(),
+       trailingByteCount = trailingByteCount ?? trailingData?.length ?? 0,
        warnings = List<AbrWarning>.unmodifiable(warnings),
        _samplesById = Map<String, AbrSample>.unmodifiable(<String, AbrSample>{for (final AbrSample sample in samples) sample.id: sample});
 

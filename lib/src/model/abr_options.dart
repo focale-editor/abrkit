@@ -9,6 +9,15 @@ enum AbrDecodeMode {
   tolerant,
 }
 
+/// Controls how strongly an ABR library is validated before encoding.
+enum AbrEncodeMode {
+  /// Produces a canonical library using the supported ABR structures.
+  strict,
+
+  /// Writes representable preserved values, including compatibility extensions.
+  permissive,
+}
+
 /// Resource and compatibility limits applied while decoding an ABR file.
 final class AbrDecodeOptions {
   /// Handling policy for recoverable format extensions and damaged entries.
@@ -44,6 +53,9 @@ final class AbrDecodeOptions {
   /// Whether tagged-section objects retain complete modern payload bytes.
   final bool preserveSectionData;
 
+  /// Whether bytes after the recognized ABR payload are retained.
+  final bool preserveTrailingData;
+
   /// Creates bounded decode options suitable for untrusted input.
   const AbrDecodeOptions({
     this.mode = AbrDecodeMode.tolerant,
@@ -57,6 +69,38 @@ final class AbrDecodeOptions {
     this.maxPatternNameCodeUnits = 1024 * 1024,
     this.descriptorOptions = const PsDescriptorDecodeOptions(),
     this.preserveSectionData = true,
+    this.preserveTrailingData = true,
+  });
+}
+
+/// Preservation and validation choices applied while encoding an ABR library.
+final class AbrEncodeOptions {
+  /// Validation policy applied before values are written.
+  final AbrEncodeMode mode;
+
+  /// Whether unrecognized modern tagged sections are retained.
+  final bool includeUnknownSections;
+
+  /// Whether embedded texture-pattern sections are written.
+  final bool includePatterns;
+
+  /// Whether brush hierarchy sections are written.
+  final bool includeHierarchy;
+
+  /// Whether bytes after the recognized ABR payload are appended.
+  final bool includeTrailingData;
+
+  /// Whether extension bytes inside embedded patterns are retained.
+  final bool includePatternTrailingData;
+
+  /// Creates encoding options for canonical ABR output by default.
+  const AbrEncodeOptions({
+    this.mode = AbrEncodeMode.strict,
+    this.includeUnknownSections = true,
+    this.includePatterns = true,
+    this.includeHierarchy = true,
+    this.includeTrailingData = true,
+    this.includePatternTrailingData = true,
   });
 }
 
@@ -112,4 +156,18 @@ final class AbrFormatException implements FormatException {
     final String location = offset == null ? '' : ' at byte $offset';
     return 'AbrFormatException$location: $message';
   }
+}
+
+/// Reports model data that cannot be represented by the requested ABR output.
+final class AbrWriteException implements Exception {
+  /// Explains why encoding failed.
+  final String message;
+
+  /// Creates an encoding error with a user-facing [message].
+  const AbrWriteException({
+    required this.message,
+  });
+
+  @override
+  String toString() => 'AbrWriteException: $message';
 }

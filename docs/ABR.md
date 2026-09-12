@@ -81,6 +81,14 @@ Typed brush engines and settings include:
 
 Unknown descriptor keys remain available through `rawDescriptor`, so their original type and value are not discarded.
 
+## Encoding
+
+`AbrEncoder` writes versions 1 and 2 using the documented fixed layouts, and versions 6, 7, 9, and 10 using tagged modern sections. Legacy computed brushes are rebuilt from their typed geometry; sampled brushes are rebuilt from normalized 1- or 8-bit pixels or full-precision 16-bit samples with raw or PackBits compression.
+
+For modern files, `samp`, `desc`, `patt`, and `phry` payloads are regenerated from `AbrSample`, the retained root Action Descriptors, shared `PsPattern` models, and hierarchy descriptors. `AbrFile.descriptors` is authoritative for modern brush settings because the typed `AbrBrush` values are projections of those extensible descriptors. Unknown sections can be copied when `preserveSectionData` was enabled or omitted with `AbrEncodeOptions.includeUnknownSections`.
+
+Strict output validates supported versions, subversions, sample geometry, precision, compression, descriptor data, and pattern records before returning bytes. Permissive output additionally retains representable compatibility values, section alignment, and trailing source data; complete preserved modern section payloads take precedence over regeneration in that mode. Missing opaque payloads and out-of-range values throw `AbrWriteException`.
+
 ### `patt`
 
 Each embedded pattern is length-prefixed and normally four-byte aligned. Version 1 pattern records contain the Photoshop color mode, origin, Unicode name, Pascal identifier, an optional indexed palette, and a version 3 Virtual Memory Array List.

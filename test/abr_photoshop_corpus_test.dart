@@ -40,6 +40,21 @@ void main() {
       check(file.brushes.single.settings!.scatter).isNotNull();
       check(file.brushes.single.settings!.transfer).isNotNull();
     });
+
+    test('re-encodes every captured library into a decodable ABR', () {
+      for (final String name in <String>[
+        'photoshop_dynamics.abr.b64',
+        'photoshop_dual_brush.abr.b64',
+      ]) {
+        final AbrFile source = AbrDecoder.decode(_readFixture(name));
+
+        final AbrFile roundTrip = AbrDecoder.decode(AbrEncoder.encode(source));
+
+        check(roundTrip.brushes.map((brush) => brush.name).toList()).deepEquals(source.brushes.map((brush) => brush.name).toList());
+        check(roundTrip.samples.map((sample) => sample.alpha).toList()).deepEquals(source.samples.map((sample) => sample.alpha).toList());
+        check(roundTrip.patterns.map((pattern) => pattern.renderRgba8().rgba).toList()).deepEquals(source.patterns.map((pattern) => pattern.renderRgba8().rgba).toList());
+      }
+    });
   });
 }
 
