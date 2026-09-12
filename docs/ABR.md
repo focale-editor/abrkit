@@ -87,6 +87,8 @@ Unknown descriptor keys remain available through `rawDescriptor`, so their origi
 
 For modern files, `samp`, `desc`, `patt`, and `phry` payloads are regenerated from `AbrSample`, the retained root Action Descriptors, shared `PsPattern` models, and hierarchy descriptors. `AbrFile.descriptors` is authoritative for modern brush settings because the typed `AbrBrush` values are projections of those extensible descriptors. Unknown sections can be copied when `preserveSectionData` was enabled or omitted with `AbrEncodeOptions.includeUnknownSections`.
 
+When a newly created computed or sampled brush has no retained descriptor, AbrKit synthesizes a canonical `brushPreset` descriptor from the typed shape. `AbrSample.square` can generate a supersampled square mask for this path. Multiple sampled presets can reference that single mask while retaining independent descriptor transforms; a diamond is therefore represented as the same square sample with a 45-degree angle. Legacy sampled records have no equivalent transform fields and require transformed pixels to be baked into the bitmap.
+
 Strict output validates supported versions, subversions, sample geometry, precision, compression, descriptor data, and pattern records before returning bytes. Permissive output additionally retains representable compatibility values, section alignment, and trailing source data; complete preserved modern section payloads take precedence over regeneration in that mode. Missing opaque payloads and out-of-range values throw `AbrWriteException`.
 
 ### `patt`

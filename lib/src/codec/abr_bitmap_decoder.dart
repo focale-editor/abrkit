@@ -71,19 +71,12 @@ abstract final class AbrBitmapDecoder {
     required int rowBytes,
     required int height,
     required bool wideRowLengths,
-  }) {
-    final List<int> lengths = <int>[];
-    for (int row = 0; row < height; row++) {
-      lengths.add(wideRowLengths ? reader.readUint32() : reader.readUint16());
-    }
-    final Uint8List output = Uint8List(rowBytes * height);
-    for (int row = 0; row < height; row++) {
-      final Uint8List encoded = reader.readBytes(lengths[row]);
-      final Uint8List decoded = PsPackBitsCodec.decodeRow(encoded, decodedLength: rowBytes);
-      output.setRange(row * rowBytes, (row + 1) * rowBytes, decoded);
-    }
-    return output;
-  }
+  }) => PsPackBitsCodec.decodeRowsReader(
+    reader,
+    rowBytes: rowBytes,
+    rowCount: height,
+    wideRowLengths: wideRowLengths,
+  );
 
   /// Expands row-padded, most-significant-bit-first bitmap samples.
   static Uint8List _expandBitmap(Uint8List bytes, int width, int height) {

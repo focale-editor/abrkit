@@ -360,20 +360,10 @@ final class _DescriptorView {
   });
 
   /// Returns an object descriptor stored under [key].
-  PsDescriptor? object(String key) => switch (descriptor.value(key)) {
-    PsObjectValue(:final PsDescriptor value) => value,
-    _ => null,
-  };
+  PsDescriptor? object(String key) => descriptor.objectValue(key);
 
   /// Returns all object descriptors in a list or a single object under [key].
-  List<PsDescriptor> objects(String key) => switch (descriptor.value(key)) {
-    PsListValue(:final List<PsDescriptorValue> values) => <PsDescriptor>[
-      for (final PsDescriptorValue value in values)
-        if (value case PsObjectValue(:final PsDescriptor value)) value,
-    ],
-    PsObjectValue(:final PsDescriptor value) => <PsDescriptor>[value],
-    _ => const <PsDescriptor>[],
-  };
+  List<PsDescriptor> objects(String key) => descriptor.objectValues(key);
 
   /// Returns a Boolean under [key] or [fallback].
   bool boolean(
@@ -382,11 +372,10 @@ final class _DescriptorView {
   }) => nullableBoolean(key) ?? fallback;
 
   /// Returns a Boolean under [key], if its descriptor type is compatible.
-  bool? nullableBoolean(String key) => switch (descriptor.value(key)) {
-    PsBooleanValue(:final bool value) => value,
-    PsIntegerValue(:final int value) => value != 0,
-    _ => null,
-  };
+  bool? nullableBoolean(String key) => descriptor.booleanValue(
+    key,
+    mode: PsDescriptorAccessMode.compatible,
+  );
 
   /// Returns an integer under [key] or [fallback].
   int integer(
@@ -395,13 +384,10 @@ final class _DescriptorView {
   }) => nullableInteger(key) ?? fallback;
 
   /// Returns an integer under [key], if its descriptor type is compatible.
-  int? nullableInteger(String key) => switch (descriptor.value(key)) {
-    PsIntegerValue(:final int value) => value,
-    PsLargeIntegerValue(:final int value) => value,
-    PsDoubleValue(:final double value) => value.round(),
-    PsUnitFloatValue(:final double value) => value.round(),
-    _ => null,
-  };
+  int? nullableInteger(String key) => descriptor.integerValue(
+    key,
+    mode: PsDescriptorAccessMode.compatible,
+  );
 
   /// Returns a numeric value under [key] or [fallback].
   double number(
@@ -410,13 +396,7 @@ final class _DescriptorView {
   }) => nullableNumber(key) ?? fallback;
 
   /// Returns a numeric value under [key], ignoring an optional unit code.
-  double? nullableNumber(String key) => switch (descriptor.value(key)) {
-    PsIntegerValue(:final int value) => value.toDouble(),
-    PsLargeIntegerValue(:final int value) => value.toDouble(),
-    PsDoubleValue(:final double value) => value,
-    PsUnitFloatValue(:final double value) => value,
-    _ => null,
-  };
+  double? nullableNumber(String key) => descriptor.scalarValue(key);
 
   /// Returns a normalized percentage under [key] or [fallback].
   double percent(
@@ -434,32 +414,14 @@ final class _DescriptorView {
   }
 
   /// Returns a string under [key] with trailing UTF-16 nulls removed.
-  String? string(String key) => switch (descriptor.value(key)) {
-    PsStringValue(:final String value) => _trimNulls(value),
-    _ => null,
-  };
+  String? string(String key) => descriptor.stringValue(key);
 
   /// Returns the selected enumeration identifier under [key].
-  String? enumeration(String key) => switch (descriptor.value(key)) {
-    PsEnumeratedValue(:final String value) => value,
-    PsStringValue(:final String value) => _trimNulls(value),
-    _ => null,
-  };
+  String? enumeration(String key) => descriptor.enumerationIdentifier(
+    key,
+    mode: PsDescriptorAccessMode.compatible,
+  );
 
   /// Returns preserved byte data under [key].
-  Uint8List? bytes(String key) => switch (descriptor.value(key)) {
-    PsRawValue(:final Uint8List value) => value,
-    PsAliasValue(:final Uint8List value) => value,
-    PsPathValue(:final Uint8List value) => value,
-    _ => null,
-  };
-
-  /// Removes only terminal null code units used by Photoshop strings.
-  static String _trimNulls(String value) {
-    int end = value.length;
-    while (end > 0 && value.codeUnitAt(end - 1) == 0) {
-      end--;
-    }
-    return value.substring(0, end);
-  }
+  Uint8List? bytes(String key) => descriptor.bytesValue(key);
 }

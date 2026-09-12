@@ -925,4 +925,38 @@ final class AbrBrush {
     this.rawDescriptor,
     Uint8List? rawData,
   }) : rawData = rawData == null ? null : Uint8List.fromList(rawData).asUnmodifiableView();
+
+  /// Creates a sampled preset whose transform remains editable in modern ABR.
+  ///
+  /// Multiple presets may reference the same [sampleId]. In particular, an
+  /// axis-aligned square and a diamond should share one square sample while the
+  /// latter adds `45` degrees to [angle]. Legacy ABR has no sampled-tip
+  /// transform descriptor, so callers targeting versions 1 or 2 must bake the
+  /// transform into separate samples instead. [shapeName] defaults to [name].
+  factory AbrBrush.sampled({
+    required String name,
+    required String sampleId,
+    required double diameter,
+    String? shapeName,
+    double angle = 0,
+    double roundness = 1,
+    double spacing = 0.25,
+    bool spacingEnabled = true,
+    bool flipX = false,
+    bool flipY = false,
+  }) => AbrBrush(
+    name: name,
+    shape: AbrSampledBrushShape(
+      sampleId: sampleId,
+      name: shapeName ?? name,
+      diameter: diameter,
+      angle: angle,
+      roundness: roundness,
+      spacing: spacing,
+      spacingEnabled: spacingEnabled,
+      flipX: flipX,
+      flipY: flipY,
+      rawDescriptor: null,
+    ),
+  );
 }

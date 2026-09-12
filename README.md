@@ -52,6 +52,38 @@ await File('brushes-copy.abr').writeAsBytes(output, flush: true);
 
 `AbrSample.alpha` contains one normalized 8-bit mask value per pixel in row-major order. For 16-bit sources, `AbrSample.alpha16` also retains every full-precision sample. Bounds retain the original Photoshop-space origin.
 
+### Creating square and diamond tips
+
+Standard computed ABR tips are elliptical. For modern files, create one canonical sampled square and express a diamond as a 45-degree descriptor transform instead of rasterizing a second bitmap:
+
+```dart
+final AbrSample squareSample = AbrSample.square(
+  id: 'canonical-square',
+  sampleSize: 256,
+  hardness: 0.85,
+  depth: 16,
+);
+final AbrFile geometricLibrary = AbrFile.modern(
+  brushes: [
+    AbrBrush.sampled(
+      name: 'Square',
+      sampleId: squareSample.id,
+      diameter: 64,
+    ),
+    AbrBrush.sampled(
+      name: 'Diamond',
+      sampleId: squareSample.id,
+      diameter: 64,
+      angle: 45,
+    ),
+  ],
+  samples: [squareSample],
+);
+final Uint8List geometricBytes = AbrEncoder.encode(geometricLibrary);
+```
+
+`AbrSample.square` analytically generates a symmetric mask with configurable hardness, precision, compression, and supersampling. Reusing its identifier deduplicates the bitmap while each modern `sampledBrush` keeps its own diameter, angle, roundness, spacing, and flips. Legacy versions 1 and 2 do not store those transforms for sampled tips, so their transforms must still be baked into separate bitmaps.
+
 ## Reusable `dart:convert` API
 
 `AbrCodec` implements `Codec<AbrFile, List<int>>` and keeps decoding and encoding policies together in one immutable value:
@@ -92,7 +124,7 @@ final AbrFile library = AbrDecoder.decode(
 
 `AbrEncoder.encode` writes the same legacy or modern family represented by `AbrFile`. Legacy computed and sampled records are rebuilt from their typed shapes and sample pixels. Modern `samp`, `desc`, `patt`, and `phry` sections are regenerated from samples, complete Action Descriptors, embedded pattern models, and hierarchy descriptors. This remains possible with `preserveSectionData: false`; only unknown or malformed sections need their original payload.
 
-Modern typed brush settings are views over `AbrBrush.rawDescriptor` and `AbrFile.descriptors`. The complete descriptors are the authoritative values when writing a `desc` section, so descriptor-level edits should be applied there before encoding.
+Modern typed brush settings are views over `AbrBrush.rawDescriptor` and `AbrFile.descriptors`. Preserved complete descriptors are authoritative when writing a `desc` section, so descriptor-level edits should be applied there before encoding. For newly created computed or sampled brushes without source descriptors, the encoder synthesizes canonical descriptors from their typed shapes.
 
 Permissive output retains compatible source padding, extension values, and trailing bytes where available. Complete preserved modern section payloads take precedence in this mode, making it suitable for lossless reconstruction; use the default strict mode when edits to typed samples, descriptors, patterns, or hierarchy must be regenerated:
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:abrkit/src/codec/abr_descriptor_builder.dart';
 import 'package:abrkit/src/model/abr_brush.dart';
 import 'package:abrkit/src/model/abr_file.dart';
 import 'package:abrkit/src/model/abr_options.dart';
@@ -255,10 +256,7 @@ final class AbrEncoder extends Converter<AbrFile, List<int>> {
     final List<PsDescriptorValue> brushes = <PsDescriptorValue>[];
     for (int index = 0; index < file.brushes.length; index++) {
       final AbrBrush brush = file.brushes[index];
-      final PsDescriptor? descriptor = brush.rawDescriptor ?? brush.settings?.rawDescriptor;
-      if (descriptor == null) {
-        throw AbrWriteException(message: 'Modern brush ${index + 1} has no source descriptor');
-      }
+      final PsDescriptor descriptor = brush.rawDescriptor ?? brush.settings?.rawDescriptor ?? AbrDescriptorBuilder.preset(file, brush, index);
       brushes.add(PsObjectValue(value: descriptor));
     }
     return <PsDescriptor>[
@@ -356,21 +354,11 @@ final class AbrEncoder extends Converter<AbrFile, List<int>> {
       case AbrCompression.raw:
         return source;
       case AbrCompression.packBits:
-        final List<Uint8List> rows = <Uint8List>[
-          for (int row = 0; row < height; row++)
-            PsPackBitsCodec.encodeRow(
-              Uint8List.sublistView(source, row * rowBytes, (row + 1) * rowBytes),
-            ),
-        ];
-        final PsBinaryWriter encoded = PsBinaryWriter();
-        for (final Uint8List row in rows) {
-          if (row.length > 0xffff) {
-            throw AbrWriteException(message: 'Sample "${sample.id}" has a PackBits row exceeding the 16-bit length capacity');
-          }
-          encoded.writeUint16(row.length);
-        }
-        rows.forEach(encoded.writeBytes);
-        return encoded.takeBytes();
+        return PsPackBitsCodec.encodeRows(
+          source,
+          rowBytes: rowBytes,
+          rowCount: height,
+        );
       case AbrCompression.unknown:
         throw AbrWriteException(message: 'Sample "${sample.id}" uses unknown compression ${sample.compressionCode}');
     }
@@ -402,11 +390,12 @@ final class AbrEncoder extends Converter<AbrFile, List<int>> {
   }
 
   /// Encodes one versioned Action Descriptor section.
-  static Uint8List _encodeDescriptor(PsDescriptor descriptor) =>
-      (PsBinaryWriter()
-            ..writeUint32(_descriptorVersion)
-            ..writeBytes(PsDescriptorCodec.encode(descriptor)))
-          .takeBytes();
+  static Uint8List _encodeDescriptor(PsDescriptor descriptor) => PsVersionedDescriptorCodec.encode(
+    PsVersionedDescriptor(
+      version: _descriptorVersion,
+      descriptor: descriptor,
+    ),
+  );
 
   /// Writes one modern tagged section and its alignment bytes.
   static void _writeSection(
@@ -420,17 +409,21 @@ final class AbrEncoder extends Converter<AbrFile, List<int>> {
     if (options.mode == AbrEncodeMode.strict && signature != _sectionSignature) {
       throw AbrWriteException(message: 'Strict ABR output cannot contain section signature "$signature"');
     }
-    writer
-      ..writeString(signature)
-      ..writeString(key)
-      ..writeUint32(data.length)
-      ..writeBytes(data);
-    if (options.mode == AbrEncodeMode.permissive) {
-      writer.writeBytes(preservedPadding);
-    } else {
-      writer.writeZeros((4 - data.length % 4) % 4);
-    }
+    PsTaggedBlockCodec.write(
+      writer,
+      PsTaggedBlock(
+        signature: signature,
+        key: key,
+        data: data,
+        paddingData: preservedPadding,
+      ),
+      wideLengthResolver: _usesOrdinarySectionLength,
+      preservePadding: options.mode == AbrEncodeMode.permissive,
+    );
   }
+
+  /// Uses the fixed 32-bit length required by modern ABR sections.
+  static bool _usesOrdinarySectionLength(String signature, String key) => false;
 
   /// Returns one complete preserved section payload.
   static Uint8List _preservedSectionData(AbrTaggedSection section) {

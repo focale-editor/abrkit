@@ -15,38 +15,8 @@ enum AbrFormatFamily {
   modern,
 }
 
-/// One modern `8BIM` section, including unknown forward-compatible payloads.
-final class AbrTaggedSection {
-  /// Four-byte signature, normally `8BIM`.
-  final String signature;
-
-  /// Four-byte section key such as `samp`, `desc`, `patt`, or `phry`.
-  final String key;
-
-  /// Absolute offset of the section signature.
-  final int offset;
-
-  /// Payload length declared in the section header.
-  final int declaredLength;
-
-  /// Unpadded section payload, or an empty list when preservation was disabled.
-  final Uint8List data;
-
-  /// Alignment bytes following the payload.
-  final Uint8List paddingData;
-
-  /// Creates an immutable tagged section.
-  AbrTaggedSection({
-    required this.signature,
-    required this.key,
-    required this.offset,
-    required Uint8List data,
-    int? declaredLength,
-    Uint8List? paddingData,
-  }) : declaredLength = declaredLength ?? data.length,
-       data = Uint8List.fromList(data).asUnmodifiableView(),
-       paddingData = Uint8List.fromList(paddingData ?? Uint8List(0)).asUnmodifiableView();
-}
+/// Backward-compatible name for a shared Photoshop tagged block.
+typedef AbrTaggedSection = PsTaggedBlock;
 
 /// One brush-group slot from a modern `phry` hierarchy descriptor.
 final class AbrHierarchyEntry {
@@ -141,6 +111,31 @@ final class AbrFile {
        trailingByteCount = trailingByteCount ?? trailingData?.length ?? 0,
        warnings = List<AbrWarning>.unmodifiable(warnings),
        _samplesById = Map<String, AbrSample>.unmodifiable(<String, AbrSample>{for (final AbrSample sample in samples) sample.id: sample});
+
+  /// Creates a descriptor-based ABR library from typed brushes and samples.
+  ///
+  /// The encoder synthesizes canonical descriptors for brushes that have no
+  /// preserved source descriptor. Advanced callers can continue to use the
+  /// unnamed constructor when supplying complete Photoshop descriptors,
+  /// sections, patterns, or hierarchy data.
+  factory AbrFile.modern({
+    required List<AbrBrush> brushes,
+    List<AbrSample> samples = const [],
+    int version = 10,
+    int subversion = 2,
+  }) => AbrFile(
+    version: version,
+    subversion: subversion,
+    family: AbrFormatFamily.modern,
+    brushes: brushes,
+    samples: samples,
+    patterns: const [],
+    hierarchy: const [],
+    descriptors: const [],
+    hierarchyDescriptors: const [],
+    sections: const [],
+    warnings: const [],
+  );
 
   /// Returns the last sample matching [id], or `null` when it is external or missing.
   AbrSample? sampleById(String id) => _samplesById[id];

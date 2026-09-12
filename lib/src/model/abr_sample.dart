@@ -114,6 +114,66 @@ final class AbrSample {
        metadata = Uint8List.fromList(metadata ?? Uint8List(0)).asUnmodifiableView(),
        trailingData = Uint8List.fromList(trailingData ?? Uint8List(0)).asUnmodifiableView();
 
+  /// Creates one reusable, analytically rasterized square tip.
+  ///
+  /// Keep the generated sample axis-aligned and express a diamond through a
+  /// sampled brush's `45` degree angle. Modern ABR files can then share this
+  /// single bitmap between square and diamond presets instead of storing two
+  /// separately rasterized tips.
+  ///
+  /// [sampleSize] controls stored bitmap resolution; the preset's displayed
+  /// size remains the sampled brush's diameter.
+  ///
+  /// [hardness] is the normalized half-width of the fully opaque inner square.
+  /// The remaining edge fades linearly. [supersampling] controls how many
+  /// subpixels are averaged along each axis.
+  factory AbrSample.square({
+    required String id,
+    required int sampleSize,
+    String? name,
+    double hardness = 1,
+    int depth = 8,
+    int supersampling = 4,
+    AbrCompression compression = AbrCompression.packBits,
+  }) {
+    if (sampleSize <= 0) {
+      throw RangeError.value(sampleSize, 'sampleSize', 'Must be greater than zero');
+    }
+    if (!hardness.isFinite || hardness < 0 || hardness > 1) {
+      throw RangeError.value(hardness, 'hardness', 'Must be finite and between zero and one');
+    }
+    if (depth != 8 && depth != 16) {
+      throw ArgumentError.value(depth, 'depth', 'Only 8-bit and 16-bit generated samples are supported');
+    }
+    if (supersampling <= 0 || supersampling > 16) {
+      throw RangeError.value(supersampling, 'supersampling', 'Must be between one and sixteen');
+    }
+    if (compression == AbrCompression.unknown) {
+      throw ArgumentError.value(compression, 'compression', 'Generated samples require a known compression');
+    }
+    final ({Uint8List alpha, Uint16List? alpha16}) raster = _rasterizeSquare(
+      sampleSize: sampleSize,
+      hardness: hardness,
+      depth: depth,
+      supersampling: supersampling,
+    );
+    return AbrSample(
+      id: id,
+      name: name,
+      bounds: AbrBounds(
+        top: 0,
+        left: 0,
+        bottom: sampleSize,
+        right: sampleSize,
+      ),
+      depth: depth,
+      compression: compression,
+      alpha: raster.alpha,
+      alpha16: raster.alpha16,
+      antiAliased: supersampling > 1 || hardness < 1,
+    );
+  }
+
   /// Width of the decoded opacity bitmap.
   int get width => bounds.width;
 
@@ -129,4 +189,55 @@ final class AbrSample {
     RangeError.checkValueInInterval(y, 0, height - 1, 'y');
     return alpha[y * width + x];
   }
+}
+
+/// Rasterizes a centered square into normalized 8-bit and optional 16-bit opacity.
+({Uint8List alpha, Uint16List? alpha16}) _rasterizeSquare({
+  required int sampleSize,
+  required double hardness,
+  required int depth,
+  required int supersampling,
+}) {
+  final int pixelCount = sampleSize * sampleSize;
+  final Uint8List alpha = Uint8List(pixelCount);
+  final Uint16List? alpha16 = depth == 16 ? Uint16List(pixelCount) : null;
+  final int subpixelCount = supersampling * supersampling;
+  final double coordinateScale = 2 / (sampleSize * supersampling);
+  for (int y = 0; y < sampleSize; y++) {
+    for (int x = 0; x < sampleSize; x++) {
+      double opacitySum = 0;
+      for (int subpixelY = 0; subpixelY < supersampling; subpixelY++) {
+        final double normalizedY = ((y * supersampling + subpixelY + 0.5) * coordinateScale - 1).abs();
+        for (int subpixelX = 0; subpixelX < supersampling; subpixelX++) {
+          final double normalizedX = ((x * supersampling + subpixelX + 0.5) * coordinateScale - 1).abs();
+          final double edgeDistance = normalizedX > normalizedY ? normalizedX : normalizedY;
+          opacitySum += _squareOpacity(edgeDistance: edgeDistance, hardness: hardness);
+        }
+      }
+      final double opacity = opacitySum / subpixelCount;
+      final int index = y * sampleSize + x;
+      if (alpha16 case final Uint16List values) {
+        final int value = (opacity * 0xffff).round();
+        values[index] = value;
+        alpha[index] = value >> 8;
+      } else {
+        alpha[index] = (opacity * 0xff).round();
+      }
+    }
+  }
+  return (alpha: alpha, alpha16: alpha16);
+}
+
+/// Returns the opacity at one Chebyshev distance from the square's center.
+double _squareOpacity({
+  required double edgeDistance,
+  required double hardness,
+}) {
+  if (edgeDistance <= hardness || hardness == 1) {
+    return 1;
+  }
+  if (edgeDistance >= 1) {
+    return 0;
+  }
+  return (1 - edgeDistance) / (1 - hardness);
 }

@@ -397,14 +397,12 @@ final class AbrDecoder extends Converter<List<int>, AbrFile> {
 
   /// Decodes one versioned Action Descriptor from `desc` or `phry`.
   static void _decodeDescriptorSection(PsBinaryReader section, _AbrDecodeContext context, {required bool hierarchy}) {
-    final int descriptorVersion = section.readUint32();
-    if (descriptorVersion != 16) {
-      throw PsFormatException(message: 'Unsupported Action Descriptor version $descriptorVersion', source: section.bytes, offset: section.baseOffset);
-    }
-    final PsDescriptor descriptor = PsDescriptorCodec.decodeReader(
+    final PsVersionedDescriptor versioned = PsVersionedDescriptorCodec.read(
       section,
+      expectedVersion: 16,
       options: context.options.descriptorOptions,
     );
+    final PsDescriptor descriptor = versioned.descriptor;
     if (!section.isAtEnd) {
       context.warning(
         '${section.remaining} extension bytes remain after the Action Descriptor',
