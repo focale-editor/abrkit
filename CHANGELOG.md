@@ -1,5 +1,11 @@
 # 📰 AbrKit changelog
 
+## v0.1.3
+Released on September 13, 2026.
+
+* **DOCS**: Added contributing guide, package screenshot, and pubspec metadata. ([#b3d7619](https://github.com/focale-editor/abrkit/commit/b3d7619))
+* **FEAT**: Added modern brush descriptor synthesis and square tip generation. ([#0b90316](https://github.com/focale-editor/abrkit/commit/0b90316))
+
 ## v0.1.2
 Released on September 12, 2026.
 
