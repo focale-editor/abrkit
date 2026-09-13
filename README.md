@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="screenshots/overview.png" alt="AbrKit package illustration" width="180">
+</p>
+
 # AbrKit
 
 AbrKit is a pure Dart codec for Adobe Photoshop brush libraries (`.abr`). It decodes and encodes both the documented legacy records and the descriptor-based modern format without Flutter, native code, or a third-party ABR parser.
@@ -151,3 +155,7 @@ See [docs/ABR.md](docs/ABR.md) for the implemented binary-layout notes and compa
 - [Patchy ABR reader](https://github.com/SethRobinson/Patchy/blob/main/src/psd/abr_reader.cpp)
 
 AbrKit is an independent implementation and is not affiliated with or endorsed by Adobe.
+
+---
+
+Built for **[Focale](https://focale-editor.app)**, an advanced local image editor. Discover what these packages make possible in a real creative workflow.

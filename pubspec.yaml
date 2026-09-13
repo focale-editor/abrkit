@@ -4,6 +4,17 @@ version: 0.1.2
 homepage: https://github.com/focale-editor/abrkit
 repository: https://github.com/focale-editor/abrkit
 
+topics:
+  - photoshop
+  - brush
+  - image-processing
+  - codec
+  - file-format
+
+screenshots:
+  - description: 'A flat illustration of ABR brush-library decoding and encoding.'
+    path: screenshots/overview.png
+
 environment:
   sdk: '>=3.13.0 <4.0.0'
 
