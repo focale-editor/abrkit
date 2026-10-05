@@ -1,5 +1,10 @@
 # 📰 AbrKit changelog
 
+## v0.1.5
+Released on October 5, 2026.
+
+* **DOCS**: Updated package overview screenshot. ([#b05dfd1](https://github.com/focale-editor/abrkit/commit/b05dfd1))
+
 ## v0.1.4
 Released on October 1, 2026.
 
