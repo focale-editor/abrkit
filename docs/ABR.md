@@ -51,7 +51,7 @@ byte[payloadLength] payload
 byte[0..3] alignment
 ```
 
-Sections are normally aligned to four bytes. Real exporters sometimes omit the alignment after the final section, which AbrKit accepts. Unknown signatures and keys are retained and become warnings in tolerant mode.
+Sections are normally aligned to four bytes. Real exporters sometimes omit the alignment after the final section, which AbrKit accepts. Unknown signatures and keys are retained and become warnings in tolerant mode. A section whose declared length runs past the end of the file, as in an incomplete download, is truncated to the bytes present in tolerant mode: its complete entries are decoded, a warning is reported, and re-encoding writes the shorter length. Strict mode rejects such a file.
 
 ### `samp`
 

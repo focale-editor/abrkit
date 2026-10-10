@@ -106,7 +106,7 @@ The `List<int>` binary type allows composition with standard codecs such as `bas
 
 ## Decoding and encoding policies
 
-Tolerant decoding is the default. Recoverable extensions are preserved and reported through `AbrFile.warnings`:
+Tolerant decoding is the default. Recoverable extensions are preserved and reported through `AbrFile.warnings`, and the complete tips of a truncated file are still recovered:
 
 ```dart
 final AbrFile library = AbrDecoder.decode(bytes);

@@ -251,16 +251,23 @@ final class AbrDecoder extends Converter<List<int>, AbrFile> {
       if (length > context.options.maxSectionBytes) {
         throw PsFormatException(message: 'ABR section $key length $length exceeds the configured ${context.options.maxSectionBytes} byte limit', source: reader.bytes, offset: sectionOffset + 8);
       }
-      final int paddedLength = _align4(length);
+      int sectionLength = length;
       if (length > reader.remaining) {
-        throw PsFormatException(message: 'ABR section $key length $length exceeds the ${reader.remaining} remaining bytes', source: reader.bytes, offset: sectionOffset + 8);
+        if (context.options.mode == AbrDecodeMode.strict) {
+          throw PsFormatException(message: 'ABR section $key length $length exceeds the ${reader.remaining} remaining bytes', source: reader.bytes, offset: sectionOffset + 8);
+        }
+        // A truncated download or copy: keep what is there, so the complete
+        // entries at the start of the section can still be recovered.
+        context.warning('ABR section $key length $length exceeds the ${reader.remaining} remaining bytes; the section is truncated', sectionOffset + 8, sectionKey: key);
+        sectionLength = reader.remaining;
       }
-      final PsBinaryReader section = reader.readReader(length);
+      final int paddedLength = _align4(sectionLength);
+      final PsBinaryReader section = reader.readReader(sectionLength);
       final Uint8List paddingData = _readOptionalFinalPadding(
         reader: reader,
-        padding: paddedLength - length,
+        padding: paddedLength - sectionLength,
         context: context,
-        offset: sectionOffset + 12 + length,
+        offset: sectionOffset + 12 + sectionLength,
         label: 'section $key',
         sectionKey: key,
       );
@@ -268,7 +275,7 @@ final class AbrDecoder extends Converter<List<int>, AbrFile> {
         signature: signature,
         key: key,
         offset: sectionOffset,
-        declaredLength: length,
+        declaredLength: sectionLength,
         data: section.bytes,
         paddingData: paddingData,
       );

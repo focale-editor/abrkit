@@ -105,69 +105,44 @@ final class AbrEncodeOptions {
 }
 
 /// Describes a recoverable compatibility issue found while decoding.
-final class AbrWarning {
-  /// Human-readable explanation of the compatibility issue.
-  final String message;
-
-  /// Absolute byte offset associated with the issue, when known.
-  final int? offset;
-
+final class AbrWarning extends PsWarning {
   /// Modern tagged-section key associated with the issue, when known.
   final String? sectionKey;
 
   /// Creates a warning at an optional absolute byte [offset].
   const AbrWarning({
-    required this.message,
-    this.offset,
+    required super.message,
+    super.offset,
     this.sectionKey,
   });
 
   @override
-  String toString() {
-    final String location = offset == null ? '' : ' at byte $offset';
-    final String section = sectionKey == null ? '' : ' in $sectionKey';
-    return 'AbrWarning$location$section: $message';
-  }
+  String get typeName => 'AbrWarning';
+
+  @override
+  String get context => sectionKey == null ? '' : ' in $sectionKey';
 }
 
 /// Reports malformed, truncated, unsupported, or unsafe ABR input.
-final class AbrFormatException implements FormatException {
-  /// Human-readable explanation of the malformed data.
-  @override
-  final String message;
-
-  /// Input associated with the failure, when useful.
-  @override
-  final Object? source;
-
-  /// Absolute byte offset associated with the failure, when known.
-  @override
-  final int? offset;
-
-  /// Creates an ABR format error at an optional absolute byte [offset].
+final class AbrFormatException extends PsFormatException {
+  /// Creates an error at an optional absolute byte [offset].
   const AbrFormatException({
-    required this.message,
-    this.source,
-    this.offset,
+    required super.message,
+    super.source,
+    super.offset,
   });
 
   @override
-  String toString() {
-    final String location = offset == null ? '' : ' at byte $offset';
-    return 'AbrFormatException$location: $message';
-  }
+  String get typeName => 'AbrFormatException';
 }
 
 /// Reports model data that cannot be represented by the requested ABR output.
-final class AbrWriteException implements Exception {
-  /// Explains why encoding failed.
-  final String message;
-
+final class AbrWriteException extends PsWriteException {
   /// Creates an encoding error with a user-facing [message].
   const AbrWriteException({
-    required this.message,
+    required super.message,
   });
 
   @override
-  String toString() => 'AbrWriteException: $message';
+  String get typeName => 'AbrWriteException';
 }

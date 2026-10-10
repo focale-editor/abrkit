@@ -478,10 +478,11 @@ final class AbrEncoder extends Converter<AbrFile, List<int>> {
     return type;
   }
 
-  /// Writes a descriptor-style UTF-16 string without adding a terminal null.
+  /// Writes a descriptor-style UTF-16 string, counting and writing a terminal null as Photoshop does.
   static void _writeUnicodeString(PsBinaryWriter writer, String value) {
-    writer.writeUint32(value.codeUnits.length);
+    writer.writeUint32(value.codeUnits.length + 1);
     value.codeUnits.forEach(writer.writeUint16);
+    writer.writeUint16(0);
   }
 
   /// Converts a normalized value to Photoshop's integer percentage scale.

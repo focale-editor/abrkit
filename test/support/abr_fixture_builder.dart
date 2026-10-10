@@ -36,7 +36,7 @@ abstract final class AbrFixtureBuilder {
     final PsBinaryWriter record = PsBinaryWriter()
       ..writeUint32(0)
       ..writeUint16(30);
-    _writeUnicodeString(record, 'Éponge');
+    _writeUnicodeString(record, 'Éponge', terminate: true);
     record
       ..writeUint8(1)
       ..writeZeros(8)
@@ -394,9 +394,12 @@ abstract final class AbrFixtureBuilder {
   }
 
   /// Writes a descriptor-style big-endian UTF-16 string.
-  static void _writeUnicodeString(PsBinaryWriter writer, String value) {
-    writer.writeUint32(value.codeUnits.length);
+  static void _writeUnicodeString(PsBinaryWriter writer, String value, {bool terminate = false}) {
+    writer.writeUint32(value.codeUnits.length + (terminate ? 1 : 0));
     value.codeUnits.forEach(writer.writeUint16);
+    if (terminate) {
+      writer.writeUint16(0);
+    }
   }
 
   /// Creates one descriptor item.

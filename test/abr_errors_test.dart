@@ -22,7 +22,7 @@ void main() {
       check(() => AbrDecoder.decode(bytes, options: options)).throws<AbrFormatException>();
     });
 
-    test('rejects a section length beyond the file bounds', () {
+    test('strict mode rejects a section length beyond the file bounds', () {
       final Uint8List bytes =
           (PsBinaryWriter()
                 ..writeUint16(6)
@@ -32,7 +32,30 @@ void main() {
                 ..writeUint32(100))
               .takeBytes();
 
-      check(() => AbrDecoder.decode(bytes)).throws<AbrFormatException>();
+      check(() => AbrDecoder.decode(bytes, options: const AbrDecodeOptions(mode: AbrDecodeMode.strict))).throws<AbrFormatException>();
+    });
+
+    test('tolerant mode recovers the complete tips of a truncated file', () {
+      // A sample section cut off in its second entry, as in an incomplete download.
+      final Uint8List complete = AbrFixtureBuilder.sampleSection().data;
+      final Uint8List bytes =
+          (PsBinaryWriter()
+                ..writeUint16(6)
+                ..writeUint16(2)
+                ..writeString('8BIM')
+                ..writeString('samp')
+                ..writeUint32(complete.length + 1000)
+                ..writeBytes(complete)
+                ..writeUint32(996)
+                ..writeBytes(Uint8List(40)))
+              .takeBytes();
+
+      final AbrFile file = AbrDecoder.decode(bytes);
+
+      check(file.samples).length.equals(1);
+      check(file.samples.single.id).equals('sample-id');
+      check(file.warnings.map((warning) => warning.message)).any((message) => message.contains('truncated'));
+      check(AbrDecoder.decode(AbrEncoder.encode(file)).samples).length.equals(1);
     });
 
     test('strict mode rejects an unknown tagged section', () {
