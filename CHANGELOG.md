@@ -1,5 +1,11 @@
 # 📰 AbrKit changelog
 
+## v0.2.0
+Released on October 10, 2026.
+
+* **FIX**: Recovered complete brush tips from truncated files and corrected Unicode names. ([#6a1f6d4](https://github.com/focale-editor/abrkit/commit/6a1f6d4))
+* **BREAKING CHORE**: Updated pscore dependency to 0.2.0. ([#53ae2e3](https://github.com/focale-editor/abrkit/commit/53ae2e3))
+
 ## v0.1.5
 Released on October 5, 2026.
 
