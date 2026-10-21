@@ -1,3 +1,4 @@
+import 'package:abrkit/src/codec/abr_descriptor_editor.dart';
 import 'package:abrkit/src/model/abr_brush.dart';
 import 'package:abrkit/src/model/abr_file.dart';
 import 'package:abrkit/src/model/abr_options.dart';
@@ -19,7 +20,7 @@ abstract final class AbrDescriptorBuilder {
       AbrUnknownBrushShape() => 0.25,
     };
     _requireNonNegative(spacing, 'Modern brush ${index + 1} spacing');
-    return PsDescriptor(
+    final PsDescriptor descriptor = PsDescriptor(
       name: '',
       classId: 'brushPreset',
       items: [
@@ -77,6 +78,7 @@ abstract final class AbrDescriptorBuilder {
         ),
       ],
     );
+    return brush.settings == null ? descriptor : AbrDescriptorEditor.settings(brush.settings!, source: descriptor);
   }
 
   /// Builds a modern tip descriptor when no preserved descriptor is available.
@@ -88,8 +90,7 @@ abstract final class AbrDescriptorBuilder {
     return switch (shape) {
       final AbrComputedBrushShape computed => _computedShapeDescriptor(computed, index),
       final AbrSampledBrushShape sampled => _sampledShapeDescriptor(sampled, index),
-      AbrBristleBrushShape() ||
-      AbrErodibleBrushShape() ||
+      AbrBristleBrushShape() || AbrErodibleBrushShape() => AbrDescriptorEditor.shape(shape),
       AbrUnknownBrushShape() => throw AbrWriteException(message: 'Modern brush ${index + 1} cannot synthesize a descriptor for ${shape.runtimeType}'),
     };
   }

@@ -87,7 +87,7 @@ Unknown descriptor keys remain available through `rawDescriptor`, so their origi
 
 For modern files, `samp`, `desc`, `patt`, and `phry` payloads are regenerated from `AbrSample`, the retained root Action Descriptors, shared `PsPattern` models, and hierarchy descriptors. `AbrFile.descriptors` is authoritative for modern brush settings because the typed `AbrBrush` values are projections of those extensible descriptors. Unknown sections can be copied when `preserveSectionData` was enabled or omitted with `AbrEncodeOptions.includeUnknownSections`.
 
-When a newly created computed or sampled brush has no retained descriptor, AbrKit synthesizes a canonical `brushPreset` descriptor from the typed shape. `AbrSample.square` can generate a supersampled square mask for this path. Multiple sampled presets can reference that single mask while retaining independent descriptor transforms; a diamond is therefore represented as the same square sample with a 45-degree angle. Legacy sampled records have no equivalent transform fields and require transformed pixels to be baked into the bitmap.
+When a newly created computed, sampled, bristle or erodible brush has no retained descriptor, AbrKit synthesizes a canonical `brushPreset` descriptor from the typed shape. `AbrSample.square` can generate a supersampled square mask for this path. Multiple sampled presets can reference that single mask while retaining independent descriptor transforms; a diamond is therefore represented as the same square sample with a 45-degree angle. Legacy sampled records have no equivalent transform fields and require transformed pixels to be baked into the bitmap.
 
 Strict output validates supported versions, subversions, sample geometry, precision, compression, descriptor data, and pattern records before returning bytes. Permissive output additionally retains representable compatibility values, section alignment, and trailing source data; complete preserved modern section payloads take precedence over regeneration in that mode. Missing opaque payloads and out-of-range values throw `AbrWriteException`.
 
@@ -115,3 +115,16 @@ Tolerant mode skips a malformed optional entry when its enclosing length makes r
 - ag-psd provides an independently implemented modern section and Action Descriptor reader.
 
 The modern `desc` key set remains extensible and is not publicly documented as a closed schema. Compatibility therefore depends on preserving unknown descriptors in addition to mapping fields observed in real Photoshop exports.
+
+## Typed preset editing
+
+`AbrBrush.edited` updates requested name, shape and behavioral settings over
+retained descriptors. `AbrFile.withBrush` replaces the corresponding entry in
+the authoritative root descriptor and invalidates only retained `desc` bytes,
+so permissive encoding also writes the edit. Other sections and samples remain
+available for reconstruction. Shape, scatter, texture, dual-brush, color,
+transfer, pose and tool settings are serialized; unknown keys are retained.
+
+Bristle and erodible `rawDescriptor` fields are now nullable, allowing fresh
+tips to be authored. Code that accesses those fields must handle null. These
+models describe Photoshop simulation parameters and do not render a brush tip.

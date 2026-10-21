@@ -5,6 +5,7 @@ export 'package:pscore/pscore.dart';
 
 export 'src/codec/abr_codec.dart';
 export 'src/codec/abr_decoder.dart';
+export 'src/codec/abr_descriptor_editor.dart' show AbrBrushEditing, AbrFileEditing;
 export 'src/codec/abr_encoder.dart';
 export 'src/model/abr_brush.dart';
 export 'src/model/abr_file.dart';

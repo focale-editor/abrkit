@@ -11,7 +11,7 @@ abstract final class AbrDescriptorMapper {
     final _DescriptorView rootView = _DescriptorView(descriptor: root);
     final List<PsDescriptor> descriptors = rootView.objects('Brsh');
     return <AbrBrush>[
-      for (final PsDescriptor descriptor in descriptors) _brush(descriptor),
+      for (final PsDescriptor descriptor in descriptors) brush(descriptor),
     ];
   }
 
@@ -42,7 +42,7 @@ abstract final class AbrDescriptorMapper {
   }
 
   /// Decodes one brush-preset descriptor.
-  static AbrBrush _brush(PsDescriptor descriptor) {
+  static AbrBrush brush(PsDescriptor descriptor) {
     final _DescriptorView view = _DescriptorView(descriptor: descriptor);
     final PsDescriptor shapeDescriptor = view.object('Brsh') ?? const PsDescriptor(name: '', classId: 'missingBrushShape');
     return AbrBrush(

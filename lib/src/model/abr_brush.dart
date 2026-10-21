@@ -269,7 +269,7 @@ final class AbrBristleBrushShape extends AbrBrushShape {
 
   /// Complete source descriptor for this bristle shape.
   @override
-  final PsDescriptor rawDescriptor;
+  final PsDescriptor? rawDescriptor;
 
   /// Creates a decoded bristle shape.
   const AbrBristleBrushShape({
@@ -287,7 +287,7 @@ final class AbrBristleBrushShape extends AbrBrushShape {
     required this.spacingEnabled,
     required this.flipX,
     required this.flipY,
-    required this.rawDescriptor,
+    this.rawDescriptor,
   });
 }
 
@@ -379,7 +379,7 @@ final class AbrErodibleBrushShape extends AbrBrushShape {
 
   /// Complete source descriptor for this erodible shape.
   @override
-  final PsDescriptor rawDescriptor;
+  final PsDescriptor? rawDescriptor;
 
   /// Creates a decoded erodible or airbrush shape.
   AbrErodibleBrushShape({
@@ -401,7 +401,7 @@ final class AbrErodibleBrushShape extends AbrBrushShape {
     required this.airbrushStreakiness,
     required this.airbrushSplatSize,
     required this.airbrushSplatCount,
-    required this.rawDescriptor,
+    this.rawDescriptor,
     required Uint8List heightMap,
     this.gridSize,
   }) : heightMap = Uint8List.fromList(heightMap).asUnmodifiableView();

@@ -128,7 +128,18 @@ final AbrFile library = AbrDecoder.decode(
 
 `AbrEncoder.encode` writes the same legacy or modern family represented by `AbrFile`. Legacy computed and sampled records are rebuilt from their typed shapes and sample pixels. Modern `samp`, `desc`, `patt`, and `phry` sections are regenerated from samples, complete Action Descriptors, embedded pattern models, and hierarchy descriptors. This remains possible with `preserveSectionData: false`; only unknown or malformed sections need their original payload.
 
-Modern typed brush settings are views over `AbrBrush.rawDescriptor` and `AbrFile.descriptors`. Preserved complete descriptors are authoritative when writing a `desc` section, so descriptor-level edits should be applied there before encoding. For newly created computed or sampled brushes without source descriptors, the encoder synthesizes canonical descriptors from their typed shapes.
+Modern typed brush settings are views over `AbrBrush.rawDescriptor` and
+`AbrFile.descriptors`. Use `brush.edited(name: ..., shape: ..., settings: ...)`
+and `file.withBrush(index, editedBrush)` to update these authoritative descriptors
+and invalidate stale `desc` section bytes, including in permissive output.
+Unknown descriptor properties remain available. Newly created computed, sampled,
+bristle and erodible tips can be encoded without source descriptors; supplied
+typed settings are serialized too.
+
+```dart
+final AbrFile renamed = file.withBrush(0, file.brushes[0].edited(name: 'Soft ink'));
+final Uint8List output = AbrEncoder.encode(renamed);
+```
 
 Permissive output retains compatible source padding, extension values, and trailing bytes where available. Complete preserved modern section payloads take precedence in this mode, making it suitable for lossless reconstruction; use the default strict mode when edits to typed samples, descriptors, patterns, or hierarchy must be regenerated:
 
