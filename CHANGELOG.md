@@ -1,5 +1,10 @@
 # 📰 AbrKit changelog
 
+## v0.3.0
+Released on October 22, 2026.
+
+* **BREAKING FEAT**: Added typed brush editing and advanced tip synthesis. ([#98e5030](https://github.com/focale-editor/abrkit/commit/98e5030))
+
 ## v0.2.0
 Released on October 10, 2026.
 
